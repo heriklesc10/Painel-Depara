@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Corporativo - Consulta DEPARA</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f1f4f9; }
+        header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px 40px; font-size: 22px; font-weight: 600; }
+        .container { padding: 30px 40px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        .filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        input { padding: 10px; border-radius: 8px; border: 1px solid #d0d5dd; font-size: 14px; }
+        input:focus { outline: none; border-color: #2a5298; box-shadow: 0 0 0 2px rgba(42,82,152,0.15); }
+        button { padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: #2a5298; color: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #2a5298; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+        tr:hover { background: #f9fafb; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .total { font-weight: 600; color: #344054; }
+        footer { text-align: center; padding: 15px; font-size: 12px; color: #667085; }
+    </style>
+</head>
+<body>
+
+<header>
+    Painel Corporativo - Consulta DEPARA
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <div class="filtros">
+            <input type="text" id="cnpj" placeholder="Pesquisar por CNPJ">
+            <input type="text" id="loja" placeholder="Pesquisar por Loja">
+            <input type="text" id="filial" placeholder="Pesquisar por Filial">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="top-bar">
+            <div class="total" id="total"></div>
+            <button class="btn-primary" onclick="exportarCSV()">Exportar Resultado</button>
+        </div>
+        <table id="tabela">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+</div>
+
+<footer>
+    Sistema Corporativo de Consulta | Uso Interno
+</footer>
+
+<script>
+
+/*
+IMPORTANTE:
+Aqui você vai colar os dados da planilha convertidos para JSON.
+A planilha não ficará visível nem precisará ser enviada.
+*/
+
+let dados = [
+    /* EXEMPLO:
+    { "Loja": "001", "Filial": "01", "Fantasia": "Loja Centro", "Cidade": "Teresina", "Nome": "Empresa X", "CNPJ": "00.000.000/0001-00" }
+    */
+];
+
+let dadosFiltrados = dados;
+
+function renderTabela(data) {
+    const thead = document.querySelector('#tabela thead');
+    const tbody = document.querySelector('#tabela tbody');
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+
+    if (data.length === 0) {
+        document.getElementById('total').innerText = 'Nenhum registro encontrado';
+        return;
+    }
+
+    const headers = Object.keys(data[0]);
+    let headerRow = '<tr>';
+    headers.forEach(h => headerRow += `<th>${h}</th>`);
+    headerRow += '</tr>';
+    thead.innerHTML = headerRow;
+
+    data.forEach(row => {
+        let rowHtml = '<tr>';
+        headers.forEach(h => rowHtml += `<td>${row[h] ?? ''}</td>`);
+        rowHtml += '</tr>';
+        tbody.innerHTML += rowHtml;
+    });
+
+    document.getElementById('total').innerText = `Total de registros encontrados: ${data.length}`;
+}
+
+function aplicarFiltro() {
+    const cnpj = document.getElementById('cnpj').value.toLowerCase();
+    const loja = document.getElementById('loja').value.toLowerCase();
+    const filial = document.getElementById('filial').value.toLowerCase();
+
+    dadosFiltrados = dados.filter(row => {
+        const c = String(row.CNPJ || '').toLowerCase();
+        const l = String(row.Loja || '').toLowerCase();
+        const f = String(row.Filial || '').toLowerCase();
+        return c.includes(cnpj) && l.includes(loja) && f.includes(filial);
+    });
+
+    renderTabela(dadosFiltrados);
+}
+
+function exportarCSV() {
+    if (dadosFiltrados.length === 0) return;
+
+    const worksheet = XLSX.utils.json_to_sheet(dadosFiltrados);
+    const csv = XLSX.utils.sheet_to_csv(worksheet);
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'resultado_filtrado.csv';
+    link.click();
+}
+
+document.getElementById('cnpj').addEventListener('input', aplicarFiltro);
+document.getElementById('loja').addEventListener('input', aplicarFiltro);
+document.getElementById('filial').addEventListener('input', aplicarFiltro);
+
+renderTabela(dados);
+
+</script>
+
+</body>
+</html>
